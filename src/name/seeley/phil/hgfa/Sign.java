@@ -1,8 +1,5 @@
 package name.seeley.phil.hgfa;
 
-import java.awt.Color;
-import java.awt.Graphics2D;
-import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -17,16 +14,15 @@ import java.security.SignatureException;
 import java.security.spec.EncodedKeySpec;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
-import javax.imageio.ImageIO;
 import javax.xml.bind.DatatypeConverter;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
+import com.google.zxing.BarcodeFormat;
 import com.google.zxing.WriterException;
-import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
-import com.google.zxing.qrcode.encoder.ByteMatrix;
-import com.google.zxing.qrcode.encoder.Encoder;
-import com.google.zxing.qrcode.encoder.QRCode;
+import com.google.zxing.client.j2se.MatrixToImageWriter;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.QRCodeWriter;
 
 public class Sign
 {
@@ -36,31 +32,35 @@ public class Sign
   {
     Security.addProvider(new BouncyCastleProvider());
   }
-  
-  public static void main(String[] args) throws IOException,
-      NoSuchAlgorithmException, InvalidKeySpecException, InvalidKeyException,
-      SignatureException, WriterException
+
+  public static void main(String[] args) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException, InvalidKeyException, SignatureException, WriterException
   {
-    if(args.length != 2)
+    if (args.length != 4)
     {
-      System.err.println("Usage:"+Sign.class.getName()+" <private key file> <data file>");
+      System.err
+          .println("Usage:"
+              + Sign.class.getName()
+              + " <private key file> <qrcode image width> <qrcode image height> <data file>");
       System.exit(-1);
     }
-    
+
     String privateKeyFilename = args[0];
-    String dataFilename = args[1];
-    
-    BufferedReader keyReader = new BufferedReader(new FileReader(privateKeyFilename));
-    
+    int width = Integer.parseInt(args[1]);
+    int height = Integer.parseInt(args[2]);
+    String dataFilename = args[3];
+
+    BufferedReader keyReader = new BufferedReader(new FileReader(
+        privateKeyFilename));
+
     String privateKeyText = keyReader.readLine();
-    
+
     keyReader.close();
-    
+
     KeyFactory keyFactory = KeyFactory.getInstance("ECDSA");
 
     EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(
         DatatypeConverter.parseBase64Binary(privateKeyText));
-    
+
     PrivateKey privateKey = keyFactory.generatePrivate(privateKeySpec);
 
     BufferedReader dataReader = new BufferedReader(new FileReader(dataFilename));
@@ -80,39 +80,15 @@ public class Sign
 
     signature.initSign(privateKey);
     signature.update(data.toString().getBytes());
+    
     byte[] signatureBytes = signature.sign();
 
     data.append("_SIG:");
     data.append(DatatypeConverter.printBase64Binary(signatureBytes));
-    
-    QRCode qrCode = Encoder.encode(data.toString(), ErrorCorrectionLevel.L);
 
-    ByteMatrix matrix = qrCode.getMatrix();
+    QRCodeWriter qrWriter = new QRCodeWriter();
+    BitMatrix bitMatrix = qrWriter.encode(data.toString(), BarcodeFormat.QR_CODE, width, height);
 
-    int width = matrix.getWidth();
-    int height = matrix.getHeight();
-
-    BufferedImage image = new BufferedImage(width * 4 + 40, height * 4 + 40,
-        BufferedImage.TYPE_INT_RGB);
-    image.createGraphics();
-
-    Graphics2D graphics = (Graphics2D) image.getGraphics();
-    graphics.setColor(Color.WHITE);
-    graphics.fillRect(0, 0, width * 4 + 40, height * 4 + 40);
-    graphics.setColor(Color.BLACK);
-
-    for (int i = 0; i < width; i++)
-    {
-      for (int j = 0; j < height; j++)
-      {
-        if (matrix.get(i, j) == 1)
-        {
-          graphics.fillRect(i * 4 + 20, j * 4 + 20, 4, 4);
-        }
-      }
-    }
-    
-    ImageIO.write(image, "png", new File(args[1]+".png"));
+    MatrixToImageWriter.writeToFile(bitMatrix, "PNG", new File(dataFilename+".png"));
   }
-
 }
