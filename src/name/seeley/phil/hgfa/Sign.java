@@ -1,3 +1,5 @@
+package name.seeley.phil.hgfa;
+
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
@@ -65,8 +67,7 @@ public class Sign
     
     PublicKey publicKey = pair.getPublic();
     PrivateKey privateKey = pair.getPrivate();
-*/
-    
+*/    
     System.out.println(DatatypeConverter.printBase64Binary(privateKey.getEncoded()));
     System.out.println(DatatypeConverter.printBase64Binary(publicKey
         .getEncoded()));
@@ -101,8 +102,13 @@ public class Sign
     instance.update(data.toString().getBytes());
     System.out.println(instance.verify(signature));
 
+
     data.append("_SIG:");
     data.append(DatatypeConverter.printBase64Binary(signature));
+    
+    //data.append(EOL);
+    //data.append("2016-01-01:EXTRA-QUAL");
+    //data.append(EOL);
 
     QRCode qrcode = Encoder.encode(data.toString(), ErrorCorrectionLevel.L);
 
