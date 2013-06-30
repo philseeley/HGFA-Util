@@ -24,7 +24,7 @@ import com.google.zxing.client.j2se.MatrixToImageWriter;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
 
-public class Sign
+public class SignQRCode
 {
   static final String EOL = "\n";
 
@@ -39,7 +39,7 @@ public class Sign
     {
       System.err
           .println("Usage:"
-              + Sign.class.getName()
+              + SignQRCode.class.getName()
               + " <private key file> <qrcode image width> <qrcode image height> <data file>");
       System.exit(-1);
     }
